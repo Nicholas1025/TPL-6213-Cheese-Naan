@@ -1,0 +1,20 @@
+{
+  "name": "mongodb_crud",
+  "version": "1.0.0",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "body-parser": "^1.20.3",
+    "express": "^4.21.2",
+    "joi": "^17.13.3",
+    "mongodb": "^6.12.0",
+    "mongoose": "^8.9.0",
+    "path": "^0.12.7"
+  }
+}
