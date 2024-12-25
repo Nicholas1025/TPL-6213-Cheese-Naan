@@ -1,8 +1,8 @@
 const express = require('express');
-const bodyParser = require("body-parser");
 const path = require('path');
+const bodyParser = require('body-parser');
+const mongoose = require('mongoose');  
 const Joi = require('joi');
-const mongoose = require('mongoose');
 const dotenv = require('dotenv');
 const cors = require('cors');
 
@@ -10,10 +10,8 @@ const cors = require('cors');
 dotenv.config();
 
 const app = express();
-
-// Database and Port Configuration
+const port = process.env.PORT || 3000;
 const mongoURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/crud_mongodb';
-const PORT = process.env.PORT || 3000;
 
 // Connect to MongoDB
 mongoose.connect(mongoURI, {
@@ -29,7 +27,8 @@ mongoose.connect(mongoURI, {
 // Define Schema and Model
 const todoSchema = new mongoose.Schema({
     todo: { type: String, required: true },
-    status: { type: String, default: "pending" },
+    position: { type: Number, required: true },
+    status: { type: String, default: "pending" }, // Added status field
     priority: { type: String, default: "medium" }
 });
 
@@ -38,9 +37,8 @@ const Todo = mongoose.model('Todo', todoSchema);
 // Middleware
 app.use(bodyParser.json());
 app.use(cors());
-app.use(express.static(path.join(__dirname, 'video')));
+app.use(express.static(path.join(__dirname)));
 
-// Serve HTML
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -48,10 +46,10 @@ app.get('/', (req, res) => {
 // Get all todos
 app.get('/getTodos', async (req, res) => {
     try {
-        const todos = await Todo.find();
+        const todos = await Todo.find().sort({ position: 1 });
         res.json(todos);
     } catch (err) {
-        console.error(err);
+        console.log(err);
         res.status(500).send('Internal Server Error');
     }
 });
@@ -71,16 +69,50 @@ app.post('/', async (req, res, next) => {
         next(err);
     } else {
         try {
+            const lastTodo = await Todo.findOne().sort({ position: -1 }).exec();
+            const newPosition = lastTodo ? lastTodo.position + 1 : 1;  // Start with position 1 if no todos exist
+
             const newTodo = new Todo({
                 todo: userInput.todo,
                 status: "pending",
-                priority: userInput.priority
+                priority: userInput.priority, 
+                position: newPosition
             });
+
             const savedTodo = await newTodo.save();
             res.json({ result: savedTodo, msg: "Successfully added task!", error: null });
         } catch (err) {
             res.status(500).json({ error: "Failed to add task" });
         }
+    }
+});
+
+// Delete a todo
+app.delete('/:id', async (req, res) => {
+    const todoId = req.params.id;
+
+    try {
+        const deletedTodo = await Todo.findByIdAndDelete(todoId);
+        res.json({ message: 'Todo deleted successfully!' });
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// Reorder todos
+app.post('/reorder', async (req, res) => {
+    const { reorderedTodos } = req.body;
+
+    try {
+        await Promise.all(reorderedTodos.map((todo, index) => {
+            return Todo.findByIdAndUpdate(todo._id, { position: index + 1 });
+        }));
+
+        res.json({ message: 'Todos reordered successfully!' });
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Internal Server Error');
     }
 });
 
@@ -96,18 +128,6 @@ app.put('/:id', async (req, res) => {
             { new: true }
         );
         res.json(updatedTodo);
-    } catch (err) {
-        res.status(500).send('Internal Server Error');
-    }
-});
-
-// Delete a todo
-app.delete('/:id', async (req, res) => {
-    const todoID = req.params.id;
-
-    try {
-        const deletedTodo = await Todo.findByIdAndDelete(todoID);
-        res.json(deletedTodo);
     } catch (err) {
         res.status(500).send('Internal Server Error');
     }
@@ -135,7 +155,7 @@ app.put('/updateStatus/:id', async (req, res) => {
     }
 });
 
-// Error handling
+// Error handling middleware
 app.use((err, req, res, next) => {
     res.status(err.status || 500).json({
         error: {
@@ -144,7 +164,6 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
-app.listen(PORT, () => {
-    console.log(`App listening on port ${PORT}`);
+app.listen(port, () => {
+    console.log(`Server is running on http://localhost:${port}`);
 });
