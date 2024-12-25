@@ -3,11 +3,20 @@ const bodyParser = require("body-parser");
 const path = require('path');
 const Joi = require('joi');
 const mongoose = require('mongoose');
+const dotenv = require('dotenv');
+const cors = require('cors');
+
+// Load environment variables
+dotenv.config();
 
 const app = express();
 
+// Database and Port Configuration
+const mongoURI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/crud_mongodb';
+const PORT = process.env.PORT || 3000;
+
 // Connect to MongoDB
-mongoose.connect('mongodb://127.0.0.1:27017/crud_mongodb', { useNewUrlParser: true, useUnifiedTopology: true })
+mongoose.connect(mongoURI, { useNewUrlParser: true, useUnifiedTopology: true })
     .then(() => console.log('Connected to MongoDB'))
     .catch(err => console.error('Could not connect to MongoDB', err));
 
@@ -15,13 +24,14 @@ mongoose.connect('mongodb://127.0.0.1:27017/crud_mongodb', { useNewUrlParser: tr
 const todoSchema = new mongoose.Schema({
     todo: { type: String, required: true },
     status: { type: String, default: "pending" },
-    priority: { type: String, default: "medium" } // Added priority field
+    priority: { type: String, default: "medium" }
 });
 
 const Todo = mongoose.model('Todo', todoSchema);
 
 // Middleware
 app.use(bodyParser.json());
+app.use(cors());
 app.use(express.static(path.join(__dirname, 'video')));
 
 // Serve HTML
@@ -44,7 +54,7 @@ app.get('/getTodos', async (req, res) => {
 app.post('/', async (req, res, next) => {
     const schema = Joi.object().keys({
         todo: Joi.string().required(),
-        priority: Joi.string().valid("high", "medium", "low").required() // Added validation for priority
+        priority: Joi.string().valid("high", "medium", "low").required()
     });
 
     const userInput = req.body;
@@ -58,7 +68,7 @@ app.post('/', async (req, res, next) => {
             const newTodo = new Todo({
                 todo: userInput.todo,
                 status: "pending",
-                priority: userInput.priority // Store priority
+                priority: userInput.priority
             });
             const savedTodo = await newTodo.save();
             res.json({ result: savedTodo, msg: "Successfully added task!", error: null });
@@ -76,7 +86,7 @@ app.put('/:id', async (req, res) => {
     try {
         const updatedTodo = await Todo.findByIdAndUpdate(
             todoID,
-            { todo: userInput.todo, priority: userInput.priority }, // Update priority
+            { todo: userInput.todo, priority: userInput.priority },
             { new: true }
         );
         res.json(updatedTodo);
@@ -129,6 +139,6 @@ app.use((err, req, res, next) => {
 });
 
 // Start server
-app.listen(3000, () => {
-    console.log('App listening on port 3000');
+app.listen(PORT, () => {
+    console.log(`App listening on port ${PORT}`);
 });
