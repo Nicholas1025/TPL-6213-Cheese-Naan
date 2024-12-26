@@ -9,36 +9,37 @@
     @import url('https://fonts.googleapis.com/css?family=Gochi+Hand');
 
     body {
-      
+
       min-height: 100vh;
       padding: 1rem;
       box-sizing: border-box;
       display: flex;
       justify-content: center;
       align-items: center;
-      
+
       font-family: 'Gochi Hand', cursive;
       text-align: center;
       font-size: 130%;
     }
 
     .progress {
-    height: 20px;
-    background-color: #e9ecef;
-    border-radius: 10px;
-    overflow: hidden;
-  }
-  
-  .progress-bar {
-    background-color: #28a745;
-    opacity: 0.8;
-    font-size: 14px;
-    line-height: 20px;
-    color: rgb(0, 0, 0);
-    text-align: center;
-    transition: width 0.5s ease; 
-}
-.back-video {
+      height: 20px;
+      background-color: #e9ecef;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .progress-bar {
+      background-color: #28a745;
+      opacity: 0.8;
+      font-size: 14px;
+      line-height: 20px;
+      color: rgb(0, 0, 0);
+      text-align: center;
+      transition: width 0.5s ease;
+    }
+
+    .back-video {
       position: fixed;
       top: 0;
       left: 0;
@@ -134,6 +135,7 @@
     }
   </style>
 </head>
+
 <body>
   <video autoplay loop muted plays-inline class="back-video">
     <source src="/video/video.mp4" type="video/mp4">
@@ -174,7 +176,8 @@
     <div class="row mt-4">
       <div class="col-md-6 offset-md-3">
         <div class="progress">
-          <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+          <div class="progress-bar" id="progressBar" role="progressbar" style="width: 0%;" aria-valuenow="0"
+            aria-valuemin="0" aria-valuemax="100"></div>
         </div>
       </div>
     </div>
@@ -193,7 +196,7 @@
   <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
 
-  
+
 
   <script type="text/javascript">
     $(document).ready(function () {
@@ -209,15 +212,15 @@
       let todos = [];
 
       const updateProgressBar = () => {
-    const completedTodos = todos.filter(todo => todo.status === "completed").length;
-    const totalTodos = todos.length;
-    const progress = totalTodos > 0 ? (completedTodos / totalTodos) * 100 : 0;
+        const completedTodos = todos.filter(todo => todo.status === "completed").length;
+        const totalTodos = todos.length;
+        const progress = totalTodos > 0 ? (completedTodos / totalTodos) * 100 : 0;
 
-    $("#progressBar")
-      .css("width", `${progress}%`)
-      .attr("aria-valuenow", progress)
-      .text(`${Math.round(progress)}%`);
-    };
+        $("#progressBar")
+          .css("width", `${progress}%`)
+          .attr("aria-valuenow", progress)
+          .text(`${Math.round(progress)}%`);
+      };
 
       const showAlert = (message, type = "success") => {
         alertMessage
@@ -242,21 +245,21 @@
       };
 
       const renderTodos = (filteredTodos) => {
-    todoList.empty();
-  
-    filteredTodos.sort((a, b) => {
-      if (a.status === "completed" && b.status !== "completed") return 1;
-      if (a.status !== "completed" && b.status === "completed") return -1;
-      return 0;
-    });
-  
-    filteredTodos.forEach(todo => {
-      const statusBtnLabel = todo.status === "completed" ? "Undo" : "Complete";
-      const completedClass = todo.status === "completed" ? "completed" : "";
-      const priorityClass = todo.priority === "high" ? "badge-danger" :
-                          todo.priority === "medium" ? "badge-warning" : "badge-success";
-  
-      const todoItem = `
+        todoList.empty();
+
+        filteredTodos.sort((a, b) => {
+          if (a.status === "completed" && b.status !== "completed") return 1;
+          if (a.status !== "completed" && b.status === "completed") return -1;
+          return 0;
+        });
+
+        filteredTodos.forEach(todo => {
+          const statusBtnLabel = todo.status === "completed" ? "Undo" : "Complete";
+          const completedClass = todo.status === "completed" ? "completed" : "";
+          const priorityClass = todo.priority === "high" ? "badge-danger" :
+            todo.priority === "medium" ? "badge-warning" : "badge-success";
+
+          const todoItem = `
         <li class="list-group-item d-flex justify-content-between align-items-center ${completedClass}" id="todo-${todo._id}">
           <span>${todo.todo} <span class="badge ${priorityClass}">${todo.priority}</span></span>
           <div>
@@ -264,13 +267,13 @@
             <button class="btn btn-danger btn-sm delete-btn" data-id="${todo._id}">Delete</button>
           </div>
         </li>`;
-      
-      todoList.append(todoItem);
-    });
-  
-    todoList.sortable();
-    updateProgressBar(); // Update the progress bar whenever the list is rendered
-  };
+
+          todoList.append(todoItem);
+        });
+
+        todoList.sortable();
+        updateProgressBar(); // Update the progress bar whenever the list is rendered
+      };
 
       const addTodo = async (todoText, priority) => {
         try {
@@ -306,14 +309,14 @@
 
       const updateStatus = async (id, status) => {
         try {
-            await fetch(`/updateStatus/${id}`, {
+          await fetch(`/updateStatus/${id}`, {
             method: "PUT",
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status })
-            });
-            fetchTodos();
+          });
+          fetchTodos();
         } catch (err) {
-            console.error("Error updating status:", err);
+          console.error("Error updating status:", err);
         }
       };
 
@@ -377,4 +380,5 @@
     });
   </script>
 </body>
+
 </html>
