@@ -28,7 +28,7 @@ mongoose.connect(mongoURI, {
 const todoSchema = new mongoose.Schema({
     todo: { type: String, required: true },
     position: { type: Number, required: true },
-    status: { type: String, default: "pending" }, 
+    status: { type: String, default: "pending" }, // Added status field
     priority: { type: String, default: "medium" }
 });
 
@@ -39,7 +39,6 @@ app.use(bodyParser.json());
 app.use(cors());
 app.use(express.static(path.join(__dirname)));
 
-// Serve index.html
 app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
@@ -71,7 +70,7 @@ app.post('/', async (req, res, next) => {
     } else {
         try {
             const lastTodo = await Todo.findOne().sort({ position: -1 }).exec();
-            const newPosition = lastTodo ? lastTodo.position + 1 : 1;
+            const newPosition = lastTodo ? lastTodo.position + 1 : 1;  // Start with position 1 if no todos exist
 
             const newTodo = new Todo({
                 todo: userInput.todo,
@@ -93,10 +92,43 @@ app.delete('/:id', async (req, res) => {
     const todoId = req.params.id;
 
     try {
-        await Todo.findByIdAndDelete(todoId);
+        const deletedTodo = await Todo.findByIdAndDelete(todoId);
         res.json({ message: 'Todo deleted successfully!' });
     } catch (err) {
         console.log(err);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// Reorder todos
+app.post('/reorder', async (req, res) => {
+    const { reorderedTodos } = req.body;
+
+    try {
+        await Promise.all(reorderedTodos.map((todo, index) => {
+            return Todo.findByIdAndUpdate(todo._id, { position: index + 1 });
+        }));
+
+        res.json({ message: 'Todos reordered successfully!' });
+    } catch (err) {
+        console.log(err);
+        res.status(500).send('Internal Server Error');
+    }
+});
+
+// Update a todo
+app.put('/:id', async (req, res) => {
+    const todoID = req.params.id;
+    const userInput = req.body;
+
+    try {
+        const updatedTodo = await Todo.findByIdAndUpdate(
+            todoID,
+            { todo: userInput.todo, priority: userInput.priority },
+            { new: true }
+        );
+        res.json(updatedTodo);
+    } catch (err) {
         res.status(500).send('Internal Server Error');
     }
 });
@@ -123,39 +155,6 @@ app.put('/updateStatus/:id', async (req, res) => {
     }
 });
 
-// Update a todo
-app.put('/:id', async (req, res) => {
-    const todoID = req.params.id;
-    const userInput = req.body;
-
-    try {
-        const updatedTodo = await Todo.findByIdAndUpdate(
-            todoID,
-            { todo: userInput.todo, priority: userInput.priority },
-            { new: true }
-        );
-        res.json(updatedTodo);
-    } catch (err) {
-        res.status(500).send('Internal Server Error');
-    }
-});
-
-// Reorder todos
-app.post('/reorder', async (req, res) => {
-    const { reorderedTodos } = req.body;
-
-    try {
-        await Promise.all(reorderedTodos.map((todo, index) => {
-            return Todo.findByIdAndUpdate(todo._id, { position: index + 1 });
-        }));
-
-        res.json({ message: 'Todos reordered successfully!' });
-    } catch (err) {
-        console.log(err);
-        res.status(500).send('Internal Server Error');
-    }
-});
-
 // Error handling middleware
 app.use((err, req, res, next) => {
     res.status(err.status || 500).json({
@@ -165,7 +164,6 @@ app.use((err, req, res, next) => {
     });
 });
 
-// Start server
 app.listen(port, () => {
     console.log(`Server is running on http://localhost:${port}`);
 });
