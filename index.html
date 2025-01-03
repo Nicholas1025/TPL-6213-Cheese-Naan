@@ -1,16 +1,16 @@
 <!DOCTYPE html>
 <html lang="en">
-<link rel="stylesheet" href="styles.css">
 
 <head>
   <meta charset="UTF-8">
   <title>Todo List - Modern Design</title>
   <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css">
+  <link rel="stylesheet" href="styles.css">
 </head>
 
 <body>
   <video autoplay loop muted plays-inline class="back-video">
-    <source src="/video/video.mp4" type="assetsvideo/mp4">
+    <source src="/assets/video/video.mp4" type="video/mp4">
   </video>
 
   <div class="container mt-5">
@@ -67,190 +67,7 @@
   <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
-
-
-
-  <script type="text/javascript">
-    $(document).ready(function () {
-
-      const todoList = $("#todoList");
-      const todoForm = $("#todoForm");
-      const todoInput = $("#todoInput");
-      const priorityInput = $("#priorityInput");
-      const alertMessage = $("#alertMessage");
-      const filterStatus = $("#filterStatus");
-      const filterPriority = $("#filterPriority");
-      const searchInput = $("#searchInput");
-      let todos = [];
-
-      const updateProgressBar = () => {
-        const completedTodos = todos.filter(todo => todo.status === "completed").length;
-        const totalTodos = todos.length;
-        const progress = totalTodos > 0 ? (completedTodos / totalTodos) * 100 : 0;
-
-        $("#progressBar")
-          .css("width", `${progress}%`)
-          .attr("aria-valuenow", progress)
-          .text(`${Math.round(progress)}%`);
-      };
-
-      const showAlert = (message, type = "success") => {
-        alertMessage
-          .removeClass("alert-success alert-danger")
-          .addClass(`alert-${type}`)
-          .text(message)
-          .fadeIn();
-
-        setTimeout(() => {
-          alertMessage.fadeOut();
-        }, 3000);
-      };
-
-      const fetchTodos = async () => {
-        try {
-          const response = await fetch('/getTodos');
-          todos = await response.json();
-          renderTodos(todos);
-        } catch (err) {
-          console.error("Error fetching todos:", err);
-        }
-      };
-
-      const renderTodos = (filteredTodos) => {
-        todoList.empty();
-
-        filteredTodos.sort((a, b) => {
-          if (a.status === "completed" && b.status !== "completed") return 1;
-          if (a.status !== "completed" && b.status === "completed") return -1;
-          return 0;
-        });
-
-        filteredTodos.forEach(todo => {
-          const statusBtnLabel = todo.status === "completed" ? "Undo" : "Complete";
-          const completedClass = todo.status === "completed" ? "completed" : "";
-          const priorityClass = todo.priority === "high" ? "badge-danger" :
-            todo.priority === "medium" ? "badge-warning" : "badge-success";
-
-          const todoItem = `
-        <li class="list-group-item d-flex justify-content-between align-items-center ${completedClass}" id="todo-${todo._id}">
-          <span>${todo.todo} <span class="badge ${priorityClass}">${todo.priority}</span></span>
-          <div>
-            <button class="btn btn-success btn-sm status-btn" data-id="${todo._id}" data-status="${todo.status}">${statusBtnLabel}</button>
-            <button class="btn btn-danger btn-sm delete-btn" data-id="${todo._id}">Delete</button>
-          </div>
-        </li>`;
-
-          todoList.append(todoItem);
-        });
-
-        todoList.sortable();
-        updateProgressBar(); // Update the progress bar whenever the list is rendered
-      };
-
-      const addTodo = async (todoText, priority) => {
-        try {
-          const response = await fetch('/', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ todo: todoText, priority })
-          });
-          if (response.ok) {
-            fetchTodos();
-          }
-        } catch (err) {
-          console.error("Error adding todo:", err);
-        }
-      };
-
-      const deleteTodo = async (id) => {
-        try {
-          const response = await fetch(`/${id}`, {
-            method: "DELETE",
-          });
-          if (response.ok) {
-            showAlert("Todo deleted successfully!", "success");
-            fetchTodos();
-          } else {
-            showAlert("Failed to delete todo", "danger");
-          }
-        } catch (err) {
-          console.error("Error deleting todo:", err);
-          showAlert("Error deleting todo", "danger");
-        }
-      };
-
-      const updateStatus = async (id, status) => {
-        try {
-          await fetch(`/updateStatus/${id}`, {
-            method: "PUT",
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status })
-          });
-          fetchTodos();
-        } catch (err) {
-          console.error("Error updating status:", err);
-        }
-      };
-
-      const filterAndRender = (status, priority, query) => {
-        let filteredTodos = todos;
-
-        if (status !== "all") {
-          filteredTodos = filteredTodos.filter(todo => todo.status === status);
-        }
-
-        if (priority !== "all") {
-          filteredTodos = filteredTodos.filter(todo => todo.priority === priority);
-        }
-
-        if (query) {
-          filteredTodos = filteredTodos.filter(todo =>
-            todo.todo.toLowerCase().includes(query)
-          );
-        }
-
-        renderTodos(filteredTodos);
-      };
-
-      todoForm.on("submit", (e) => {
-        e.preventDefault();
-        addTodo(todoInput.val().trim(), priorityInput.val());
-        todoInput.val("");
-      });
-
-      todoList.on("click", ".delete-btn", function () {
-        const id = $(this).data("id");
-        deleteTodo(id);
-      });
-
-      todoList.on("click", ".status-btn", function () {
-        const id = $(this).data("id");
-        const status = $(this).data("status") === "pending" ? "completed" : "pending";
-        updateStatus(id, status);
-      });
-
-      filterStatus.on("change", function () {
-        const status = $(this).val();
-        const priority = filterPriority.val();
-        filterAndRender(status, priority, searchInput.val().toLowerCase());
-      });
-
-      filterPriority.on("change", function () {
-        const status = filterStatus.val();
-        const priority = $(this).val();
-        filterAndRender(status, priority, searchInput.val().toLowerCase());
-      });
-
-      searchInput.on("input", function () {
-        const query = $(this).val().toLowerCase();
-        const status = filterStatus.val();
-        const priority = filterPriority.val();
-        filterAndRender(status, priority, query);
-      });
-
-      fetchTodos();
-    });
-  </script>
+  <script type="text/javascript" src="app.js"></script>
 </body>
 
 </html>

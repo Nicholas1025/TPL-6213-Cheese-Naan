@@ -28,7 +28,7 @@ mongoose.connect(mongoURI, {
 const todoSchema = new mongoose.Schema({
     todo: { type: String, required: true },
     position: { type: Number, required: true },
-    status: { type: String, default: "pending" }, // Added status field
+    status: { type: String, default: "pending" },
     priority: { type: String, default: "medium" }
 });
 
@@ -70,7 +70,7 @@ app.post('/', async (req, res, next) => {
     } else {
         try {
             const lastTodo = await Todo.findOne().sort({ position: -1 }).exec();
-            const newPosition = lastTodo ? lastTodo.position + 1 : 1;  // Start with position 1 if no todos exist
+            const newPosition = lastTodo ? lastTodo.position + 1 : 1;
 
             const newTodo = new Todo({
                 todo: userInput.todo,
