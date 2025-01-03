@@ -67,7 +67,131 @@
   <script type="text/javascript" src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   <script type="text/javascript" src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js"></script>
   <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/lodash.js/4.17.21/lodash.min.js"></script>
-  <script type="text/javascript" src="app.js"></script>
+
+  <script type="text/javascript">
+    $(document).ready(function () {
+
+      const todoList = $("#todoList");
+      const todoForm = $("#todoForm");
+      const todoInput = $("#todoInput");
+      const priorityInput = $("#priorityInput");
+      const alertMessage = $("#alertMessage");
+      const filterStatus = $("#filterStatus");
+      const filterPriority = $("#filterPriority");
+      const searchInput = $("#searchInput");
+      let todos = [];
+
+      // 更新进度条
+      const updateProgressBar = () => {
+        const completedTodos = todos.filter(todo => todo.status === "completed").length;
+        const totalTodos = todos.length;
+        const progress = totalTodos > 0 ? (completedTodos / totalTodos) * 100 : 0;
+
+        $("#progressBar")
+          .css("width", `${progress}%`)
+          .attr("aria-valuenow", progress)
+          .text(`${Math.round(progress)}%`);
+      };
+
+      // 显示提示信息
+      const showAlert = (message, type = "success") => {
+        alertMessage
+          .removeClass("alert-success alert-danger")
+          .addClass(`alert-${type}`)
+          .text(message)
+          .fadeIn();
+
+        setTimeout(() => {
+          alertMessage.fadeOut();
+        }, 3000);
+      };
+
+      // 获取任务列表
+      const fetchTodos = async () => {
+        try {
+          const response = await fetch('/getTodos');
+          todos = await response.json();
+          renderTodos(todos);
+        } catch (err) {
+          console.error("Error fetching todos:", err);
+        }
+      };
+
+      // 渲染任务列表
+      const renderTodos = (filteredTodos) => {
+        todoList.empty();
+
+        filteredTodos.forEach(todo => {
+          const statusBtnLabel = todo.status === "completed" ? "Undo" : "Complete";
+          const completedClass = todo.status === "completed" ? "completed" : "";
+          const priorityClass = todo.priority === "high" ? "badge-danger" :
+            todo.priority === "medium" ? "badge-warning" : "badge-success";
+
+          const todoItem = `
+            <li class="list-group-item d-flex justify-content-between align-items-center ${completedClass}" id="todo-${todo._id}">
+              <span>${todo.todo} <span class="badge ${priorityClass}">${todo.priority}</span></span>
+              <div>
+                <button class="btn btn-success btn-sm status-btn" data-id="${todo._id}" data-status="${todo.status}">${statusBtnLabel}</button>
+                <button class="btn btn-danger btn-sm delete-btn" data-id="${todo._id}">Delete</button>
+              </div>
+            </li>`;
+
+          todoList.append(todoItem);
+        });
+
+        updateProgressBar();
+      };
+
+      // 添加任务
+      const addTodo = async (todoText, priority) => {
+        try {
+          const response = await fetch('/', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ todo: todoText, priority })
+          });
+          if (response.ok) fetchTodos();
+        } catch (err) {
+          console.error("Error adding todo:", err);
+        }
+      };
+
+      // 删除任务
+      todoList.on("click", ".delete-btn", async function () {
+        const id = $(this).data("id");
+        try {
+          await fetch(`/${id}`, { method: "DELETE" });
+          fetchTodos();
+        } catch (err) {
+          console.error("Error deleting todo:", err);
+        }
+      });
+
+      // 更新状态
+      todoList.on("click", ".status-btn", async function () {
+        const id = $(this).data("id");
+        const status = $(this).data("status") === "pending" ? "completed" : "pending";
+        try {
+          await fetch(`/updateStatus/${id}`, {
+            method: "PUT",
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+          });
+          fetchTodos();
+        } catch (err) {
+          console.error("Error updating status:", err);
+        }
+      });
+
+      todoForm.on("submit", (e) => {
+        e.preventDefault();
+        addTodo(todoInput.val().trim(), priorityInput.val());
+        todoInput.val("");
+      });
+
+      fetchTodos();
+    });
+  </script>
 </body>
 
 </html>
