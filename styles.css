@@ -125,3 +125,33 @@ body {
 .toDoList li:hover {
   text-decoration: line-through wavy #24bffb;
 }
+
+/* Added styles for todo list content */
+#todoList {
+  word-wrap: break-word; /* Forces long text to wrap within the container */
+  overflow-wrap: break-word; /* Breaks long words when necessary */
+  max-width: 100%; /* Ensures content stays within its container */
+  margin: 0 auto; /* Centers the list */
+}
+
+.list-group-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  word-wrap: break-word; /* Forces text wrapping */
+  overflow-wrap: break-word;
+}
+
+.list-group-item span {
+  max-width: 70%; /* Limits the width of the task text */
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+.list-group-item span .badge {
+  margin-left: 10px; /* Adds space between the task and the priority badge */
+}
+
+.list-group-item button {
+  margin-left: 5px; /* Adds spacing between buttons */
+}
