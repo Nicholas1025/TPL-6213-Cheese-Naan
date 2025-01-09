@@ -72,7 +72,6 @@
 
   <script type="text/javascript">
     $(document).ready(function () {
-
       const todoList = $("#todoList");
       const todoForm = $("#todoForm");
       const todoInput = $("#todoInput");
@@ -106,10 +105,19 @@
         }, 3000);
       };
 
+      const saveTaskOrder = (newOrder) => {
+        localStorage.setItem("taskOrder", JSON.stringify(newOrder));
+      };
+
       const fetchTodos = async () => {
         try {
           const response = await fetch('/getTodos');
           todos = await response.json();
+
+          // Apply saved order if exists
+          const savedOrder = JSON.parse(localStorage.getItem("taskOrder")) || [];
+          todos.sort((a, b) => savedOrder.indexOf(a._id) - savedOrder.indexOf(b._id));
+
           renderTodos(todos);
         } catch (err) {
           console.error("Error fetching todos:", err);
@@ -119,12 +127,6 @@
       const renderTodos = (filteredTodos) => {
         todoList.empty();
 
-        filteredTodos.sort((a, b) => {
-          if (a.status === "completed" && b.status !== "completed") return 1;
-          if (a.status !== "completed" && b.status === "completed") return -1;
-          return 0;
-        });
-
         filteredTodos.forEach(todo => {
           const statusBtnLabel = todo.status === "completed" ? "Undo" : "Complete";
           const completedClass = todo.status === "completed" ? "completed" : "";
@@ -132,19 +134,31 @@
             todo.priority === "medium" ? "badge-warning" : "badge-success";
 
           const todoItem = `
-        <li class="list-group-item d-flex justify-content-between align-items-center ${completedClass}" id="todo-${todo._id}">
-          <span>${todo.todo} <span class="badge ${priorityClass}">${todo.priority}</span></span>
-          <div>
-            <button class="btn btn-success btn-sm status-btn" data-id="${todo._id}" data-status="${todo.status}">${statusBtnLabel}</button>
-            <button class="btn btn-danger btn-sm delete-btn" data-id="${todo._id}">Delete</button>
-          </div>
-        </li>`;
+            <li class="list-group-item d-flex justify-content-between align-items-center ${completedClass}" 
+                id="${todo._id}">
+              <span>${todo.todo} <span class="badge ${priorityClass}">${todo.priority}</span></span>
+              <div>
+                <button class="btn btn-success btn-sm status-btn" data-id="${todo._id}" data-status="${todo.status}">
+                  ${statusBtnLabel}
+                </button>
+                <button class="btn btn-danger btn-sm delete-btn" data-id="${todo._id}">Delete</button>
+              </div>
+            </li>`;
 
           todoList.append(todoItem);
         });
 
-        todoList.sortable();
-        updateProgressBar(); 
+        todoList.sortable({
+          stop: function () {
+            const newOrder = todoList.children().map(function () {
+              return $(this).attr("id");
+            }).get();
+
+            saveTaskOrder(newOrder);
+          }
+        });
+
+        updateProgressBar();
       };
 
       const addTodo = async (todoText, priority) => {
